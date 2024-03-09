@@ -26,6 +26,17 @@ let vContext = vCanvas.getContext("2d");
 let cameraX = 0;
 let cameraY = 0;
 
+// キーボード
+let key = [];
+// キーが押されたとき
+document.onkeydown = function (e) {
+    key[e.key] = true;
+}
+// キーが離されたとき
+document.onkeyup = function (e) {
+    key[e.key] = false;
+}
+
 // 画像の読み込み
 let spriteImage = new Image();
 spriteImage.src = "./image/sprite.png"
@@ -44,38 +55,79 @@ class ImageInfo {
     }
 }
 
-// 画像情報配列
-let imageInfos = [
-    new ImageInfo(0, 0, 22, 42),
-    new ImageInfo(23, 0, 33, 42),
-    new ImageInfo(57, 0, 43, 42),
-    new ImageInfo(101, 0, 33, 42),
-    new ImageInfo(135, 0, 21, 42),
-];
-
 // プレイヤークラス
 class Player {
 
+    // 画像情報配列
+    static #imageInfos = [
+        new ImageInfo(0, 0, 22, 42),
+        new ImageInfo(23, 0, 33, 42),
+        new ImageInfo(57, 0, 43, 42),
+        new ImageInfo(101, 0, 33, 42),
+        new ImageInfo(135, 0, 21, 42),
+    ];
+
     // コンストラクター
     constructor() {
+        // カウンター（生存時間）
+        this.count = 0;
         // 画像情報のindex
-        this.imageIndex = 0;
+        this.imageIndex = 2;
         // 座標
-        this.x = 0;
-        this.y = 0;
+        this.x = (FIELD_WIDTH / 2) << 8;
+        this.y = (FIELD_HEIGHT / 2) << 8;
+        // スピード
+        this.speed = 1024;
+    }
+
+    // 情報更新
+    update() {
+        // カウント
+        this.count++;
+
+        // 左右キー押下時
+        if (key["ArrowLeft"] && this.x > 0) {
+            // 左へ移動
+            this.x = this.x - this.speed;
+            // 4フレーム単位で左傾き画像へ
+            if (this.count % 4 == 0 && this.imageIndex > 0) {
+                this.imageIndex--;
+            }
+        } else if (key["ArrowRight"] && this.x < (FIELD_WIDTH << 8)) {
+            // 右へ移動
+            this.x = this.x + this.speed;
+            // 4フレーム単位で右傾き画像へ
+            if (this.count % 4 == 0 && this.imageIndex < 4) {
+                this.imageIndex++;
+            }
+        } else {
+            // 4フレーム単位で正面画像へ
+            if (this.count % 4 == 0) {
+                if (this.imageIndex < 2) {
+                    this.imageIndex++;
+                } else if (this.imageIndex > 2) {
+                    this.imageIndex--;
+                }
+            }
+        }
+
+        // 上キー押下時
+        if (key["ArrowUp"] && this.y > 0) {
+            this.y = this.y - this.speed;
+        }
+        // 下キー押下時
+        if (key["ArrowDown"] && this.y < (FIELD_HEIGHT << 8)) {
+            this.y = this.y + this.speed;
+        }
     }
 
     // 描画処理
-    draw(imageIndex, x, y) {
-        // Player情報
-        this.imageIndex = imageIndex;
-        this.x = x;
-        this.y = y;
+    draw() {
         // 画像情報
-        let imageX = imageInfos[this.imageIndex].x;
-        let imageY = imageInfos[this.imageIndex].y;
-        let imageWidth = imageInfos[this.imageIndex].width;
-        let imageHeight = imageInfos[this.imageIndex].height;
+        let imageX = Player.#imageInfos[this.imageIndex].x;
+        let imageY = Player.#imageInfos[this.imageIndex].y;
+        let imageWidth = Player.#imageInfos[this.imageIndex].width;
+        let imageHeight = Player.#imageInfos[this.imageIndex].height;
         // 位置座標
         let pX = this.x >> 8;
         let pY = this.y >> 8;
@@ -162,6 +214,8 @@ function gameLoop() {
     for (let index = 0; index < star.length; index++) {
         star[index].update();
     }
+    // プレイヤーの更新
+    player.update();
 
     // 描画処理
     // 星の描画
@@ -169,7 +223,12 @@ function gameLoop() {
         star[index].draw();
     }
     // プレイヤーの描画
-    player.draw(2, 100 << 8, 100 << 8);
+    player.draw();
+
+    // プレイヤーの範囲 0 ~ FIELD_WIDTH
+    // カメラの範囲 0 ~ (FIELD_WIDTH - SCREEN_WIDTH)
+    cameraX = Math.floor((player.x >> 8) / FIELD_WIDTH * (FIELD_WIDTH - SCREEN_WIDTH));
+    cameraY = Math.floor((player.y >> 8) / FIELD_HEIGHT * (FIELD_HEIGHT - SCREEN_HEIGHT));
 
     // キャンバスの描画（仮想画面からコピー）
     context.drawImage(vCanvas, cameraX, cameraY, SCREEN_WIDTH, SCREEN_HEIGHT,
