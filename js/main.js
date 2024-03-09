@@ -26,6 +26,72 @@ let vContext = vCanvas.getContext("2d");
 let cameraX = 0;
 let cameraY = 0;
 
+// 画像の読み込み
+let spriteImage = new Image();
+spriteImage.src = "./image/sprite.png"
+
+// 画像情報クラス
+class ImageInfo {
+
+    // コンストラクター
+    constructor(x, y, width, height) {
+        // 画像座標
+        this.x = x;
+        this.y = y;
+        // 画像の大きさ
+        this.width = width;
+        this.height = height;
+    }
+}
+
+// 画像情報配列
+let imageInfos = [
+    new ImageInfo(0, 0, 22, 42),
+    new ImageInfo(23, 0, 33, 42),
+    new ImageInfo(57, 0, 43, 42),
+    new ImageInfo(101, 0, 33, 42),
+    new ImageInfo(135, 0, 21, 42),
+];
+
+// プレイヤークラス
+class Player {
+
+    // コンストラクター
+    constructor() {
+        // 画像情報のindex
+        this.imageIndex = 0;
+        // 座標
+        this.x = 0;
+        this.y = 0;
+    }
+
+    // 描画処理
+    draw(imageIndex, x, y) {
+        // Player情報
+        this.imageIndex = imageIndex;
+        this.x = x;
+        this.y = y;
+        // 画像情報
+        let imageX = imageInfos[this.imageIndex].x;
+        let imageY = imageInfos[this.imageIndex].y;
+        let imageWidth = imageInfos[this.imageIndex].width;
+        let imageHeight = imageInfos[this.imageIndex].height;
+        // 位置座標
+        let pX = this.x >> 8;
+        let pY = this.y >> 8;
+        // 画像の中心座標
+        pX = pX - (imageWidth / 2);
+        pY = pY - (imageHeight / 2);
+        // 画像を指定の位置に描画
+        vContext.drawImage(spriteImage, imageX, imageY, imageWidth, imageHeight,
+            pX, pY, imageWidth, imageHeight);
+    }
+
+}
+
+// プレイヤーの生成
+let player = new Player();
+
 // ランダム整数
 function rand(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -102,6 +168,8 @@ function gameLoop() {
     for (let index = 0; index < star.length; index++) {
         star[index].draw();
     }
+    // プレイヤーの描画
+    player.draw(2, 100 << 8, 100 << 8);
 
     // キャンバスの描画（仮想画面からコピー）
     context.drawImage(vCanvas, cameraX, cameraY, SCREEN_WIDTH, SCREEN_HEIGHT,
